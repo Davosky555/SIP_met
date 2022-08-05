@@ -43,18 +43,12 @@ class SecondarySensor:
         :return: Encoded data
         """
         if self.value == -99999.0:
-            if self.label in ("MWWL", "MWWL2", "COND"):
+            if self.label in ("BARO", "COND", "MWWL", "MWWL2"):
                 return "???"
-            if self.label in ("MWSTD", "AT", "WT", "CTWT"):
+            if self.label in ("AT", "BAT", "CTWT", "MWSTD", "MWSTD2", "SNS", "WT"):
                 return "??"
-            if self.label == "MWOUT":
+            if self.label == ("MWOUT", "MWOUT2"):
                 return "?"
-            if self.label == "BARO":
-                return "@@@"
-            if self.label == "SNS":
-                return "@@"
-            if self.label == "BAT":
-                return "_?"
 
         value = int(self.value * 10 ** self.right_digits)
         if self.label == "MWOUT":
@@ -183,7 +177,7 @@ class TsunamiData(SecondarySensor):
         :return: returns encoded data
         """
         if -99999.0 in (self.value, self.value2, self.value3, self.value4, self.value5, self.value6):
-            return "?", "?", "@", "@@", "@@", "@@", "@@", "@@", "@@"
+            return "?", "?", "?", "??", "??", "??", "??", "??", "??"
         value = round(self.value * 10 ** self.right_digits)
         value2 = round(self.value2 * 10 ** self.right_digits)
         value3 = round(self.value3 * 10 ** self.right_digits)
@@ -763,12 +757,60 @@ def goes_message(standard):
 
 
 @MEASUREMENT
-def floats(standard):
+def mwwl(standard):
     _ = standard  # neatly discards the input from sensor because it's not needed
-    return urandom.uniform(0.5, 5)
+    return urandom.uniform(3, 5)
 
 
 @MEASUREMENT
-def ints(standard):
+def mwstd(standard):
+    _ = standard  # neatly discards the input from sensor because it's not needed
+    return urandom.uniform(0.001, 0.1)
+
+
+@MEASUREMENT
+def mwout(standard):
     _ = standard  # neatly discards the input from sensor because it's not needed
     return urandom.randint(0, 10)
+
+
+@MEASUREMENT
+def mwcount(standard):
+    _ = standard  # neatly discards the input from sensor because it's not needed
+    return 360 - urandom.randint(0, 10)
+
+
+@MEASUREMENT
+def ws(standard):
+    _ = standard  # neatly discards the input from sensor because it's not needed
+    return urandom.uniform(1, 2)
+
+
+@MEASUREMENT
+def wd(standard):
+    _ = standard  # neatly discards the input from sensor because it's not needed
+    return urandom.randint(0, 359)
+
+
+@MEASUREMENT
+def wg(standard):
+    _ = standard  # neatly discards the input from sensor because it's not needed
+    return urandom.uniform(1, 2) * 1.8
+
+
+@MEASUREMENT
+def temp(standard):
+    _ = standard  # neatly discards the input from sensor because it's not needed
+    return urandom.uniform(18, 25)
+
+
+@MEASUREMENT
+def baro(standard):
+    _ = standard  # neatly discards the input from sensor because it's not needed
+    return urandom.uniform(900, 1200)
+
+
+@MEASUREMENT
+def cond(standard):
+    _ = standard  # neatly discards the input from sensor because it's not needed
+    return urandom.uniform(10, 50)
