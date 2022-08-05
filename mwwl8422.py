@@ -10,6 +10,62 @@ from sl3 import *
 import urandom
 
 
+def pseudo_encoder(int_val, byt, pos=False):
+    """
+    Pseudobinary encoder function converts binary number from -131072 to 131071
+    :param int_val: Decimal number
+    :param byt: Number of bytes (1,2 or 3)
+    :param pos: Positive only is True
+    :return: Pseudobinary b format
+    """
+    int_val = int(str(int_val).replace(".", ""))
+    iv = 0
+    if int_val < 0 and pos:
+        return "`@@"[:byt]
+    if int_val < 0 and not pos:
+        if byt == 1 and int_val < -31:
+            return "`"
+        if byt == 2 and int_val < -2047:
+            return "`@"
+        if byt == 3 and int_val < -131071:
+            return "`@@"
+        # Call decimal_to_binary Function
+        bi_num = decimal_to_binary(int_val)
+        bi_str = ""
+        for bit in bi_num:
+            if bit == "1":
+                bi_str += "0"
+            else:
+                bi_str += "1"
+        iv = int(bi_str, 2) + 1
+    if int_val >= 0:
+        if not pos:
+            if byt == 1 and int_val > 30:
+                return "_"
+            if byt == 2 and int_val > 2046:
+                return "_?"
+            if byt == 3 and int_val > 131070:
+                return "_??"
+        elif pos:
+            if byt == 1 and int_val > 62:
+                return "?"
+            if byt == 2 and int_val > 4094:
+                return "??"
+            if byt == 3 and int_val > 262142:
+                return "???"
+        iv = int_val
+    bi_array = [iv >> 12, (iv >> 6) & 63, iv & 63]
+    for i in range(3):
+        if bi_array[i] != int(63):
+            bi_array[i] += 64
+    if byt == 1:
+        return chr(bi_array[2])
+    if byt == 2:
+        return chr(bi_array[1]) + chr(bi_array[2])
+    if byt == 3:
+        return chr(bi_array[0]) + chr(bi_array[1]) + chr(bi_array[2])
+
+
 def sutron_day_calc(julian_day, year):
     """
     Sutron day counts the number of days from 12/31/1984 till date. uses modulo 4096
@@ -45,7 +101,8 @@ class SecondarySensor:
         if self.value == -99999.0:
             if self.label in ("BARO", "COND", "MWWL", "MWWL2"):
                 return "???"
-            if self.label in ("AT", "BAT", "CTWT", "MWSTD", "MWSTD2", "SNS", "WT"):
+            if self.label in ("AT", "BAT", "CTWT", "MWSTD", "MWSTD2", "SNS",
+                              "WT", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
                 return "??"
             if self.label == ("MWOUT", "MWOUT2"):
                 return "?"
@@ -53,7 +110,7 @@ class SecondarySensor:
         value = int(self.value * 10 ** self.right_digits)
         if self.label == "MWOUT":
             return pseudo_encoder(value, 1, True)
-        if self.label in ("BARO", "BAT", "MWSTD", "WD", "WG", "WS"):
+        if self.label in ("BARO", "BAT", "MWSTD", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
             if self.label == "BARO":
                 value -= 8000
             return pseudo_encoder(value, 2, True)
@@ -291,11 +348,23 @@ def ports_tag_message_formatter():
     """
     This function formats the data to a file for PORTS Tag transmission
     """
+    global goes_msg
+    pri_sns = ""
+    pri_sns_check = ""
+    dat_sns_goes = ""
+    aqt_goes = aqt_temp = aqt_rtemp = aqt_std_temp = aqt_out_temp = aqt1_temp = aqt2_temp = ""
+    bwl_goes = bwl_temp = bwl_std_temp = bwl_out_temp = bwl_rtemp = ""
+    mw_goes = mw_temp = mw_std_temp = mw_out_temp = mw_rtemp = ""
+    mw_goes2 = mw_temp2 = mw_std_temp2 = mw_out_temp2 = mw_rtemp2 = ""
+    wind_goes = ws_temp = wd_temp = wg_temp = ""
+    wind_goes2 = ws_temp2 = wd_temp2 = wg_temp2 = ""
+    at_goes = wt_goes = ctwt_goes = baro_goes = bat_goes = batt_goes = cond_goes = tsu_goes = ""
     aqt = []
     mwwl1 = []
     mwwl2 = []
     wind1 = []
     wind2 = []
+
     station_id = command_line("!STATION NAME\r").strip()
     pri_year = str("{:04d}".format(add_sns[0].year))
     pri_month = str("{:02d}".format(add_sns[0].month))
@@ -304,50 +373,172 @@ def ports_tag_message_formatter():
     pri_hour = str("{:02d}".format(add_sns[0].hour))
     pri_minute = str("{:02d}".format(add_sns[0].minute))
     pri_second = str("{:02d}".format(add_sns[0].second))
+    time_tag_goes = "0" + add_sns[0].get_encoded_sutron_day() + add_sns[0].get_encoded_hour()
+    min_goes = add_sns[0].get_encoded_minute()
+    sys_goes = "@@"
     f = open("p", "w")
     f.write("NOS {0} {1} {2}:{3}:{4}\r\n".format(station_id, pri_date, pri_hour, pri_minute, pri_second))
     for a_s in add_sns:
         if a_s.label in ("AQT", "AQTSTD", "AQTOUT", "AQT1", "AQT2"):
+            if a_s.label == "AQT":
+                if a_s.meas_number == 1:
+                    pri_sns_check = a_s.label
+                aqt_temp = a_s.get_encoded_data()
+                aqt_rtemp = a_s.get_encoded_redundant_data()
+            if a_s.label == "AQTSTD":
+                aqt_std_temp = a_s.get_encoded_data()
+            if a_s.label == "AQTOUT":
+                aqt_out_temp = a_s.get_encoded_data()
+            if a_s.label == "AQT1":
+                aqt1_temp = a_s.get_encoded_data()
+            if a_s.label == "AQT2":
+                aqt2_temp = a_s.get_encoded_data()
             aqt.append(a_s.value)
             if len(aqt) == 5:
+                if pri_sns_check == "AQT":
+                    pri_sns += "1" + aqt_temp + aqt_std_temp + aqt_out_temp + aqt1_temp + aqt2_temp + ">" + aqt_rtemp
+                else:
+                    aqt_goes += "1" + aqt_temp + aqt_std_temp + aqt_out_temp + aqt1_temp + aqt2_temp + ">" + aqt_rtemp
                 ports_tag_message_append("A1 1", aqt, f, 1)
         elif a_s.label in ("WS", "WD", "WG"):
+            if a_s.label == "WS":
+                if a_s.meas_number == 1:
+                    pri_sns_check = a_s.label
+                ws_temp = a_s.get_encoded_data()
+            if a_s.label == "WD":
+                wd_temp = a_s.get_encoded_data()
+            if a_s.label == "WG":
+                wg_temp = a_s.get_encoded_data()
             wind1.append(a_s.value)
             if len(wind1) == 3:
+                if pri_sns_check == "WS":
+                    pri_sns += "3" + ws_temp + wd_temp + wg_temp
+                else:
+                    wind_goes += "3" + ws_temp + wd_temp + wg_temp
                 ports_tag_message_append("C1 3", wind1, f, 2)
         elif a_s.label in ("WS2", "WD2", "WG2"):
+            if a_s.label == "WS2":
+                if a_s.meas_number == 1:
+                    pri_sns_check = a_s.label
+                ws_temp2 = a_s.get_encoded_data()
+            if a_s.label == "WD2":
+                wd_temp2 = a_s.get_encoded_data()
+            if a_s.label == "WG2":
+                wg_temp2 = a_s.get_encoded_data()
             wind2.append(a_s.value)
             if len(wind2) == 3:
-                ports_tag_message_append("C2 3", wind2, f, 2)
+                if pri_sns_check == "WS2":
+                    pri_sns += "3" + ws_temp2 + wd_temp2 + wg_temp2
+                else:
+                    wind_goes2 += "3" + ws_temp2 + wd_temp2 + wg_temp2
+                ports_tag_message_append("C1 3", wind1, f, 2)
+
         elif a_s.label in ("MWWL", "MWSTD", "MWOUT"):
+            if a_s.label == "MWWL":
+                if a_s.meas_number == 1:
+                    pri_sns_check = a_s.label
+                mw_temp = a_s.get_encoded_data()
+                mw_rtemp = a_s.get_encoded_redundant_data()
+            if a_s.label == "MWSTD":
+                mw_std_temp = a_s.get_encoded_data()
+            if a_s.label == "MWOUT":
+                mw_out_temp = a_s.get_encoded_data()
             mwwl1.append(a_s.value)
             if len(mwwl1) == 3:
+                if pri_sns_check == "MWWL":
+                    pri_sns += "8" + mw_temp + mw_std_temp + mw_out_temp + "#" + mw_rtemp
+                else:
+                    mw_goes += "8" + mw_temp + mw_std_temp + mw_out_temp + "#" + mw_rtemp
                 ports_tag_message_append("Y1 8", mwwl1, f, 3)
-        elif a_s.label in ("BWL", "BWLSTD", "BWLOUT"):
-            bwl.append(a_s.value)
-            if len(bwl) == 3:
-                ports_tag_message_append("B1 2", bwl, f, 3)
+
         elif a_s.label in ("MWWL2", "MWSTD2", "MWOUT2"):
+            if a_s.label == "MWWL2":
+                if a_s.meas_number == 1:
+                    pri_sns_check = a_s.label
+                mw_temp2 = a_s.get_encoded_data()
+                mw_rtemp2 = a_s.get_encoded_redundant_data()
+            if a_s.label == "MWSTD2":
+                mw_std_temp2 = a_s.get_encoded_data()
+            if a_s.label == "MWOUT2":
+                mw_out_temp2 = a_s.get_encoded_data()
             mwwl2.append(a_s.value)
             if len(mwwl2) == 3:
-                ports_tag_message_append("Y2 8", mwwl2, f, 3)
+                if pri_sns_check == "MWW2":
+                    pri_sns += "8" + mw_temp2 + mw_std_temp2 + mw_out_temp2 + "#" + mw_rtemp2
+                else:
+                    mw_goes2 += "8" + mw_temp2 + mw_std_temp2 + mw_out_temp2 + "#" + mw_rtemp2
+                ports_tag_message_append("Y1 8", mwwl2, f, 3)
+
+        elif a_s.label in ("BWL", "BWLSTD", "BWLOUT"):
+            if a_s.label == "BWL":
+                if a_s.meas_number == 1:
+                    pri_sns_check = a_s.label
+                bwl_temp = a_s.get_encoded_data()
+                bwl_rtemp = a_s.get_encoded_redundant_data()
+            if a_s.label == "BWLSTD":
+                bwl_std_temp = a_s.get_encoded_data()
+            if a_s.label == "BWLOUT":
+                bwl_out_temp = a_s.get_encoded_data()
+            bwl.append(a_s.value)
+            if len(bwl) == 3:
+                if pri_sns_check == "BWL":
+                    pri_sns += "2" + bwl_temp + bwl_std_temp + bwl_out_temp + '"' + bwl_rtemp
+                else:
+                    bwl_goes += "2" + bwl_temp + bwl_std_temp + bwl_out_temp + '"' + bwl_rtemp
+                ports_tag_message_append("Y1 8", bwl, f, 3)
         elif a_s.label == "AT":
+            if a_s.meas_number == 1:
+                pri_sns += "4" + a_s.get_encoded_data()
+            else:
+                at_goes += "4" + a_s.get_encoded_data()
             ports_tag_message_append("D1 4", a_s.value, f, 4)
         elif a_s.label == "WT":
+            if a_s.meas_number == 1:
+                pri_sns += "5" + a_s.get_encoded_data()
+            else:
+                wt_goes += "5" + a_s.get_encoded_data()
             ports_tag_message_append("E1 5", a_s.value, f, 4)
         elif a_s.label == "CTWT":
+            if a_s.meas_number == 1:
+                pri_sns += "5" + a_s.get_encoded_data()
+            else:
+                ctwt_goes += "5" + a_s.get_encoded_data()
             ports_tag_message_append("E2 5", a_s.value, f, 4)
         elif a_s.label == "BARO":
+            if a_s.meas_number == 1:
+                pri_sns += "6" + a_s.get_encoded_data()
+            else:
+                baro_goes += "6" + a_s.get_encoded_data()
             ports_tag_message_append("F1 6", a_s.value, f, 4)
-        elif a_s.label in ("BAT", "BBAT"):
+        elif a_s.label == "BAT":
+            bat_goes += "<" + a_s.get_encoded_data() + " "
+            ports_tag_message_append("L1 <", a_s.value, f, 4)
+        elif a_s.label == "BATT":
+            batt_goes += "<" + a_s.get_encoded_data() + " "
             ports_tag_message_append("L1 <", a_s.value, f, 4)
         elif a_s.label == "COND":
+            if a_s.meas_number == 1:
+                pri_sns += "-7" + a_s.get_encoded_data()
+            else:
+                cond_goes += "-7" + a_s.get_encoded_data()
             ports_tag_message_append("G1 -7", a_s.value, f, 5)
-        elif a_s.label in ("SNS", "DAT"):
+        elif a_s.label in "SNS":
+            dat_sns_goes = dat_sns_goes + a_s.get_encoded_data()
             ports_tag_message_append(a_s.label, a_s.value, f, 6)
+        elif a_s.label == "DAT":
+            ports_tag_message_append(a_s.label, a_s.value, f, 6)
+            dat_sns_goes = a_s.get_encoded_data() + dat_sns_goes
         elif a_s.label == "TWL":
+            a_s.get_encoded_tsunami()
+            tsu = a_s.get_encoded_tsunami()
+            tsu_goes += "T" + tsu[0] + tsu[1] + tsu[2] + tsu[3] + tsu[4] + tsu[5] + tsu[6] + tsu[7] + tsu[8]
             val = a_s.value, a_s.value2, a_s.value3, a_s.value4, a_s.value5, a_s.value6
             ports_tag_message_append("U1", val, f, 7)
+    goes_msg = "P{0}{1}{2}{3}{4}{5}{6}{7}{8}{9}{10}{11}{12}{13}{14}{15}{16}{17}{18}{19}".\
+        format(station_id, dat_sns_goes, sys_goes, min_goes, time_tag_goes, pri_sns, aqt_goes, mw_goes,
+               mw_goes2, wind_goes, wind_goes2, at_goes, wt_goes, ctwt_goes, baro_goes, cond_goes,
+               bat_goes, bwl_goes, batt_goes, tsu_goes)
+
     f.write("\r\nREPORT COMPLETE\r\n")
     f.close()
 
@@ -401,11 +592,11 @@ temp_sns = []
 temp_label = []
 add_sns = []
 cnt_meas = 0
-
+goes_msg = ""
 for s_n in range(32):
     if command_line("!M" + str(s_n + 1) + " active\r").strip() == "On":
         cnt_meas += 1
-        if cnt_meas == 1 or command_line("!M" + str(s_n + 1) + " LABEL\r").strip() in ("AQT", "MWWL", "MWWL2", "BWL"):
+        if cnt_meas == 1 or command_line("!M" + str(s_n + 1) + " LABEL\r").strip() in ("AQT", "BWL", "MWWL", "MWWL2"):
             temp_sns.append(PrimarySensor("M" + str(s_n + 1)))
         else:
             if command_line("!M" + str(s_n + 1) + " LABEL\r").strip() == "TWL":
@@ -466,7 +657,7 @@ status_message("Initialization complete!")
 
 
 def initialize_config():
-    global add_sns, cnt_meas, temp_sns, temp_label
+    global add_sns, cnt_meas, temp_sns, temp_label, goes_msg
     command_line("!file mkdir /sd/status_log/\r")
     status_message("Initializing data...")
 
@@ -606,107 +797,6 @@ def get_log_date(log):
     return log_year, log_month, log_day, log_hour, log_minute, log_second
 
 
-def goes_message_formatter():
-    """
-    This function formats the encoded data and prepares it for GOES transmission
-    :return: GOES message
-    """
-    wind_bird = ""
-    station_id = command_line("!STATION NAME\r").strip()
-    tsunami = twl.get_encoded_tsunami()
-    tx_battery = float(command_line("!BATT\r").strip())
-    if tx_battery < 9.5:
-        tx_battery = 9.5
-    tx_battery = round((tx_battery - 9.5) * 10)
-    if tx_battery > 63:
-        tx_battery = 63
-    tx_battery = pseudo_encoder(tx_battery, 1, True)
-    tx_message = "P{0}{1}{2}@@{3}0{4}{5}8{6}{7}{8}#{9}<{10} {11}T{12}{13}{14}{15}{16}{17}{18}{19}{20}".format(
-        station_id, dat.get_encoded_data(), sns.get_encoded_data(), pri.get_encoded_minute(),
-        pri.get_encoded_sutron_day(), pri.get_encoded_hour(), pri.get_encoded_data(), mwstd.get_encoded_data(),
-        mwout.get_encoded_data(), pri.get_encoded_redundant_data(), bat.get_encoded_data(), tx_battery,
-        tsunami[0], tsunami[1], tsunami[2], tsunami[3], tsunami[4], tsunami[5], tsunami[6], tsunami[7], tsunami[8])
-    for a_s in add_sns:
-        if a_s.label == "WS":
-            wind_bird += a_s.get_encoded_data()
-        elif a_s.label == "WD":
-            wind_bird += a_s.get_encoded_data()
-        elif a_s.label == "WG":
-            wind_bird += a_s.get_encoded_data()
-            index = tx_message.find('<')
-            if len(wind_bird) == 6:
-                tx_message = tx_message[:index] + "3" + wind_bird + tx_message[index:]
-            else:
-                tx_message = tx_message[:index] + "3" + "??????" + tx_message[index:]
-        elif a_s.label == "AT":
-            index = tx_message.find('<')
-            tx_message = tx_message[:index] + "4" + a_s.get_encoded_data() + tx_message[index:]
-        elif a_s.label == "WT":
-            index = tx_message.find('<')
-            tx_message = tx_message[:index] + "5" + a_s.get_encoded_data() + tx_message[index:]
-        elif a_s.label == "BARO":
-            index = tx_message.find('<')
-            tx_message = tx_message[:index] + "6" + a_s.get_encoded_data() + tx_message[index:]
-
-    return tx_message
-
-
-def pseudo_encoder(int_val, byt, pos=False):
-    """
-    Pseudobinary encoder function converts binary number from -131072 to 131071
-    :param int_val: Decimal number
-    :param byt: Number of bytes (1,2 or 3)
-    :param pos: Positive only is True
-    :return: Pseudobinary b format
-    """
-    int_val = int(str(int_val).replace(".", ""))
-    iv = 0
-    if int_val < 0 and pos:
-        return "`@@"[:byt]
-    if int_val < 0 and not pos:
-        if byt == 1 and int_val < -31:
-            return "`"
-        if byt == 2 and int_val < -2047:
-            return "`@"
-        if byt == 3 and int_val < -131071:
-            return "`@@"
-        # Call decimal_to_binary Function
-        bi_num = decimal_to_binary(int_val)
-        bi_str = ""
-        for bit in bi_num:
-            if bit == "1":
-                bi_str += "0"
-            else:
-                bi_str += "1"
-        iv = int(bi_str, 2) + 1
-    if int_val >= 0:
-        if not pos:
-            if byt == 1 and int_val > 30:
-                return "_"
-            if byt == 2 and int_val > 2046:
-                return "_?"
-            if byt == 3 and int_val > 131070:
-                return "_??"
-        elif pos:
-            if byt == 1 and int_val > 62:
-                return "?"
-            if byt == 2 and int_val > 4094:
-                return "??"
-            if byt == 3 and int_val > 262142:
-                return "???"
-        iv = int_val
-    bi_array = [iv >> 12, (iv >> 6) & 63, iv & 63]
-    for i in range(3):
-        if bi_array[i] != int(63):
-            bi_array[i] += 64
-    if byt == 1:
-        return chr(bi_array[2])
-    if byt == 2:
-        return chr(bi_array[1]) + chr(bi_array[2])
-    if byt == 3:
-        return chr(bi_array[0]) + chr(bi_array[1]) + chr(bi_array[2])
-
-
 @TASK
 def delete_old_files():
     """
@@ -752,7 +842,7 @@ def goes_message(standard):
     """
     status_message("Transmitting GOES message...")
     _ = standard  # neatly discards the input from sensor because it's not needed
-    good_goes_message = goes_message_formatter()
+    good_goes_message = goes_msg
     status_message("GOES transmission successful!")
     return good_goes_message
 
