@@ -10,6 +10,19 @@ from sl3 import *
 import urandom
 
 
+def decimal_to_binary(decimal_number):
+    """
+    This function coverts decimal to 18 bits binary number
+    :param decimal_number: Decimal number
+    :return: 18 bits binary number
+    """
+    bi_num = bin(abs(decimal_number)).replace("0b", "")
+    bi_len = len(bi_num)
+    bi_app = "0" * 18
+    bi_app = bi_app[0:18 - bi_len]
+    return bi_app + bi_num
+
+
 def pseudo_encoder(int_val, byt, pos=False):
     """
     Pseudobinary encoder function converts binary number from -131072 to 131071
@@ -99,18 +112,18 @@ class SecondarySensor:
         :return: Encoded data
         """
         if self.value == -99999.0:
-            if self.label in ("BARO", "COND", "MWWL", "MWWL2"):
+            if self.label in ("DAT", "COND", "MWWL", "MWWL2"):
                 return "???"
-            if self.label in ("AT", "BAT", "CTWT", "MWSTD", "MWSTD2", "SNS",
+            if self.label in ("AT", "BAT", "BARO", "CTWT", "MWSTD", "MWSTD2", "SNS",
                               "WT", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
                 return "??"
             if self.label == ("MWOUT", "MWOUT2"):
                 return "?"
 
         value = int(self.value * 10 ** self.right_digits)
-        if self.label == "MWOUT":
+        if self.label == ("MWOUT", "MWOUT2"):
             return pseudo_encoder(value, 1, True)
-        if self.label in ("BARO", "BAT", "MWSTD", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
+        if self.label in ("BARO", "BAT", "MWSTD", "MWSTD2", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
             if self.label == "BARO":
                 value -= 8000
             return pseudo_encoder(value, 2, True)
@@ -171,7 +184,7 @@ class PrimarySensor(SecondarySensor):
         :return: returns encoded data
         """
         if self.redundant_value == -99999.0:
-            return "@@@"
+            return "???"
         value = int(self.redundant_value * 10 ** self.right_digits)
         return pseudo_encoder(value, 3)
 
@@ -727,19 +740,6 @@ def initialize_config():
     del temp_label
     ports_tag_message_formatter()
     status_message("Initialization complete!")
-
-
-def decimal_to_binary(decimal_number):
-    """
-    This function coverts decimal to 18 bits binary number
-    :param decimal_number: Decimal number
-    :return: 18 bits binary number
-    """
-    bi_num = bin(abs(decimal_number)).replace("0b", "")
-    bi_len = len(bi_num)
-    bi_app = "0" * 18
-    bi_app = bi_app[0:18 - bi_len]
-    return bi_app + bi_num
 
 
 def file_deleter(file_dir):
