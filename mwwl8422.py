@@ -241,14 +241,9 @@ def sl3_datetime():
     return sl3_date, sl3_time
 
 
-def ports_tag_message_append(flag, val, f, typ=1):
+def ports_tag_message_append(flag, val, f, typ):
+
     if typ == 1:
-        f.write(flag)
-        f.write("{:>11.1f}\r\n".format(val) if val != -99999.0 else "  Data Flagged as bad or missing\r\n")
-    elif typ == 2:
-        f.write(flag)
-        f.write("{:>10.3f}".format(val) + "\r\n" if val != -99999.0 else " data not available\r\n")
-    elif typ == 3:
         f.write(flag)
         if -99999.0 not in val[:3]:
             f.write("{0}{1}{2}{3}{4}\r\n".format("{:>11.3f}".format(val[0]), "{:>9.3f}".format(val[1]),
@@ -256,7 +251,7 @@ def ports_tag_message_append(flag, val, f, typ=1):
                                                  "{:>10.1f}".format(val[4])))
         else:
             f.write("  Data flagged as bad or missing\r\n")
-    elif typ == 4:
+    elif typ == 2:
         f.write(flag)
         if -99999.0 not in val:
             f.write("{0}{1}{2}\r\n".format("{:>11.1f}".format(val[0]),
@@ -265,7 +260,7 @@ def ports_tag_message_append(flag, val, f, typ=1):
         else:
             f.write("  Data flagged as bad or missing\r\n")
 
-    elif typ == 5:
+    elif typ == 3:
         f.write(flag)
         if -99999.0 not in val:
             f.write("{0}{1}{2}\r\n".format("{:>11.3f}".format(val[0]),
@@ -273,14 +268,22 @@ def ports_tag_message_append(flag, val, f, typ=1):
                                            "{:>10.0f}".format(val[2])))
         else:
             f.write("  Data flagged as bad or missing\r\n")
+    elif typ == 4:
+        f.write(flag)
+        f.write("{:>11.1f}\r\n".format(val) if val != -99999.0 else "  Data Flagged as bad or missing\r\n")
+
+    elif typ == 5:
+        f.write(flag)
+        f.write("{:>10.2f}\r\n".format(val) if val != -99999.0 else " Data Flagged as bad or missing\r\n")
+
     elif typ == 6:
+        f.write(flag)
+        f.write("{:>10.3f}".format(val) + "\r\n" if val != -99999.0 else " data not available\r\n")
+
+    elif typ == 7:
         for v in val:
             f.write(flag)
             f.write("{:>11.3f}".format(v) + "\r\n" if v != -99999.0 else " data not available\r\n")
-
-    elif typ == 7:
-        f.write(flag)
-        f.write("{:>10.2f}\r\n".format(val) if val != -99999.0 else " Data Flagged as bad or missing\r\n")
     return
 
 
@@ -307,44 +310,44 @@ def ports_tag_message_formatter():
         if a_s.label in ("AQT", "AQTSTD", "AQTOUT", "AQT1", "AQT2"):
             aqt.append(a_s.value)
             if len(aqt) == 5:
-                ports_tag_message_append("A1 1", aqt, f, 3)
+                ports_tag_message_append("A1 1", aqt, f, 1)
         elif a_s.label in ("WS", "WD", "WG"):
             wind1.append(a_s.value)
             if len(wind1) == 3:
-                ports_tag_message_append("C1 3", wind1, f, 4)
+                ports_tag_message_append("C1 3", wind1, f, 2)
         elif a_s.label in ("WS2", "WD2", "WG2"):
             wind2.append(a_s.value)
             if len(wind2) == 3:
-                ports_tag_message_append("C2 3", wind2, f, 4)
+                ports_tag_message_append("C2 3", wind2, f, 2)
         elif a_s.label in ("MWWL", "MWSTD", "MWOUT"):
             mwwl1.append(a_s.value)
             if len(mwwl1) == 3:
-                ports_tag_message_append("Y1 8", mwwl1, f, 5)
+                ports_tag_message_append("Y1 8", mwwl1, f, 3)
         elif a_s.label in ("BWL", "BWLSTD", "BWLOUT"):
             bwl.append(a_s.value)
             if len(bwl) == 3:
-                ports_tag_message_append("B1 2", bwl, f, 5)
+                ports_tag_message_append("B1 2", bwl, f, 3)
         elif a_s.label in ("MWWL2", "MWSTD2", "MWOUT2"):
             mwwl2.append(a_s.value)
             if len(mwwl2) == 3:
-                ports_tag_message_append("Y2 8", mwwl2, f, 5)
+                ports_tag_message_append("Y2 8", mwwl2, f, 3)
         elif a_s.label == "AT":
-            ports_tag_message_append("D1 4", a_s.value, f)
+            ports_tag_message_append("D1 4", a_s.value, f, 4)
         elif a_s.label == "WT":
-            ports_tag_message_append("E1 5", a_s.value, f)
+            ports_tag_message_append("E1 5", a_s.value, f, 4)
         elif a_s.label == "CTWT":
-            ports_tag_message_append("E2 5", a_s.value, f)
+            ports_tag_message_append("E2 5", a_s.value, f, 4)
         elif a_s.label == "BARO":
-            ports_tag_message_append("F1 6", a_s.value, f)
+            ports_tag_message_append("F1 6", a_s.value, f, 4)
         elif a_s.label in ("BAT", "BBAT"):
-            ports_tag_message_append("L1 <", a_s.value, f)
+            ports_tag_message_append("L1 <", a_s.value, f, 4)
         elif a_s.label == "COND":
-            ports_tag_message_append("G1 -7", a_s.value, f, 7)
+            ports_tag_message_append("G1 -7", a_s.value, f, 5)
         elif a_s.label in ("SNS", "DAT"):
-            ports_tag_message_append(a_s.label, a_s.value, f, 2)
+            ports_tag_message_append(a_s.label, a_s.value, f, 6)
         elif a_s.label == "TWL":
             val = a_s.value, a_s.value2, a_s.value3, a_s.value4, a_s.value5, a_s.value6
-            ports_tag_message_append("U1", val, f, 6)
+            ports_tag_message_append("U1", val, f, 7)
     f.write("\r\nREPORT COMPLETE\r\n")
     f.close()
 
@@ -402,7 +405,7 @@ cnt_meas = 0
 for s_n in range(32):
     if command_line("!M" + str(s_n + 1) + " active\r").strip() == "On":
         cnt_meas += 1
-        if cnt_meas == 1:
+        if cnt_meas == 1 or command_line("!M" + str(s_n + 1) + " LABEL\r").strip() in ("AQT", "MWWL", "MWWL2", "BWL"):
             temp_sns.append(PrimarySensor("M" + str(s_n + 1)))
         else:
             if command_line("!M" + str(s_n + 1) + " LABEL\r").strip() == "TWL":
@@ -423,7 +426,6 @@ elif temp_label[0] == "WS":
 else:
     add_sns.append(temp_sns.pop(0))
     temp_label.pop(0)
-print(temp_label, "***")
 if "AQT" in temp_label:
     temp_label, temp_sns, add_sns = sort_sns_list(("AQT", "AQTSTD", "AQTOUT", "AQT1", "AQT2"), temp_label, temp_sns,
                                                   add_sns)
@@ -497,7 +499,6 @@ def initialize_config():
     else:
         add_sns.append(temp_sns.pop(0))
         temp_label.pop(0)
-    print(temp_label, "***")
     if "AQT" in temp_label:
         temp_label, temp_sns, add_sns = sort_sns_list(("AQT", "AQTSTD", "AQTOUT", "AQT1", "AQT2"), temp_label, temp_sns,
                                                       add_sns)
