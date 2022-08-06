@@ -112,22 +112,22 @@ class SecondarySensor:
         :return: Encoded data
         """
         if self.value == -99999.0:
-            if self.label in ("DAT", "COND", "MWWL", "MWWL2"):
+            if self.label in ("AQT", "BWL", "COND", "DAT", "MWWL", "MWWL2"):
                 return "???"
-            if self.label in ("AT", "BAT", "BARO", "CTWT", "MWSTD", "MWSTD2", "SNS",
+            if self.label in ("AT", "AQT1", "AQT2", "BAT", "BBAT", "BARO", "CTWT", "MWSTD", "MWSTD2", "SNS",
                               "WT", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
                 return "??"
-            if self.label in ("MWOUT", "MWOUT2"):
+            if self.label in ("MWOUT", "MWOUT2", "BWLOUT"):
                 return "?"
-
         value = int(self.value * 10 ** self.right_digits)
-        if self.label in ("MWOUT", "MWOUT2"):
+        if self.label in ("MWOUT", "MWOUT2", "AQTOUT"):
             return pseudo_encoder(value, 1, True)
-        if self.label in ("BARO", "BAT", "MWSTD", "MWSTD2", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
+        if self.label in ("AQTSTD", "BARO", "BAT", "BBAT", "BWLSTD", "MWSTD",
+                          "MWSTD2", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
             if self.label == "BARO":
                 value -= 8000
             return pseudo_encoder(value, 2, True)
-        if self.label in ("SNS", "AT", "WT", "CTWT"):
+        if self.label in ("AT", "AQT1", "AQT2", "CTWT", "SNS", "WT"):
             return pseudo_encoder(value, 2)
         return pseudo_encoder(value, 3)
 
@@ -626,7 +626,7 @@ if temp_label[0] == "AQT":
     temp_label, temp_sns, add_sns = sort_sns_list(("AQT", "AQTSTD", "AQTOUT", "AQT1", "AQT2"), temp_label, temp_sns,
                                                   add_sns)
 elif temp_label[0] == "MWWL":
-    temp_label, temp_sns, add_sns = sort_sns_list(("MWWL", "MWSTD", "MWOUT", "MWCOUNTS"), temp_label, temp_sns, add_sns)
+    temp_label, temp_sns, add_sns = sort_sns_list(("MWWL", "MWSTD", "MWOUT"), temp_label, temp_sns, add_sns)
 
 elif temp_label[0] == "WS":
     temp_label, temp_sns, add_sns = sort_sns_list(("WS", "WD", "WG"), temp_label, temp_sns, add_sns)
