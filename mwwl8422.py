@@ -117,11 +117,11 @@ class SecondarySensor:
             if self.label in ("AT", "BAT", "BARO", "CTWT", "MWSTD", "MWSTD2", "SNS",
                               "WT", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
                 return "??"
-            if self.label == ("MWOUT", "MWOUT2"):
+            if self.label in ("MWOUT", "MWOUT2"):
                 return "?"
 
         value = int(self.value * 10 ** self.right_digits)
-        if self.label == ("MWOUT", "MWOUT2"):
+        if self.label in ("MWOUT", "MWOUT2"):
             return pseudo_encoder(value, 1, True)
         if self.label in ("BARO", "BAT", "MWSTD", "MWSTD2", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
             if self.label == "BARO":
@@ -458,9 +458,11 @@ def ports_tag_message_formatter():
                 mw_out_temp = a_s.get_encoded_data()
             mwwl1.append(a_s.value)
             if len(mwwl1) == 3:
+                print("mw_out_temp", mw_out_temp)
                 if pri_sns_check == "MWWL":
                     pri_sns += "8" + mw_temp + mw_std_temp + mw_out_temp + "#" + mw_rtemp
                 else:
+
                     mw_goes += "8" + mw_temp + mw_std_temp + mw_out_temp + "#" + mw_rtemp
                 ports_tag_message_append("Y1 8", mwwl1, f, 3)
 
@@ -547,6 +549,7 @@ def ports_tag_message_formatter():
             tsu_goes += "T" + tsu[0] + tsu[1] + tsu[2] + tsu[3] + tsu[4] + tsu[5] + tsu[6] + tsu[7] + tsu[8]
             val = a_s.value, a_s.value2, a_s.value3, a_s.value4, a_s.value5, a_s.value6
             ports_tag_message_append("U1", val, f, 7)
+    print("pri_sns", pri_sns)
     goes_msg = "P{0}{1}{2}{3}{4}{5}{6}{7}{8}{9}{10}{11}{12}{13}{14}{15}{16}{17}{18}{19}".\
         format(station_id, dat_sns_goes, sys_goes, min_goes, time_tag_goes, pri_sns, aqt_goes, mw_goes,
                mw_goes2, wind_goes, wind_goes2, at_goes, wt_goes, ctwt_goes, baro_goes, cond_goes,
@@ -636,7 +639,7 @@ if "AQT" in temp_label:
 if "MWWL" in temp_label:
     temp_label, temp_sns, add_sns = sort_sns_list(("MWWL", "MWSTD", "MWOUT"), temp_label, temp_sns, add_sns)
 if "MWWL2" in temp_label:
-    temp_label, temp_sns, add_sns = sort_sns_list(("MWWL2", "MWSTD2", "MWOUT2", "MWCOUNTS2"), temp_label, temp_sns, add_sns)
+    temp_label, temp_sns, add_sns = sort_sns_list(("MWWL2", "MWSTD2", "MWOUT2"), temp_label, temp_sns, add_sns)
 if "WS" in temp_label:
     temp_label, temp_sns, add_sns = sort_sns_list(("WS", "WD", "WG"), temp_label, temp_sns, add_sns)
 if "WS2" in temp_label:
@@ -709,7 +712,7 @@ def initialize_config():
     if "MWWL" in temp_label:
         temp_label, temp_sns, add_sns = sort_sns_list(("MWWL", "MWSTD", "MWOUT"), temp_label, temp_sns, add_sns)
     if "MWWL2" in temp_label:
-        temp_label, temp_sns, add_sns = sort_sns_list(("MWWL2", "MWSTD2", "MWOUT2", "MWCOUNTS2"), temp_label, temp_sns, add_sns)
+        temp_label, temp_sns, add_sns = sort_sns_list(("MWWL2", "MWSTD2", "MWOUT2"), temp_label, temp_sns, add_sns)
     if "WS" in temp_label:
         temp_label, temp_sns, add_sns = sort_sns_list(("WS", "WD", "WG"), temp_label, temp_sns, add_sns)
     if "WS2" in temp_label:
