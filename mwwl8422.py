@@ -127,7 +127,7 @@ class SecondarySensor:
             if self.label == "BARO":
                 value -= 8000
             return pseudo_encoder(value, 2, True)
-        if self.label in ("SNS", "AT", "WT"):
+        if self.label in ("SNS", "AT", "WT", "CTWT"):
             return pseudo_encoder(value, 2)
         return pseudo_encoder(value, 3)
 
