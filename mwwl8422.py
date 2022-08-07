@@ -340,11 +340,11 @@ def ports_tag_message_append(flag, val, typ):
             msg += "  Data flagged as bad or missing\r\n"
     elif typ == 4:
         msg += flag
-        msg += "{:>11.1f}\r\n".format(val) if val != -99999.0 else "  Data Flagged as bad or missing\r\n"
+        msg += "{:>11.1f}\r\n".format(val) if val != -99999.0 else "  Data flagged as bad or missing\r\n"
 
     elif typ == 5:
         msg += flag
-        msg += "{:>10.2f}\r\n".format(val) if val != -99999.0 else " Data Flagged as bad or missing\r\n"
+        msg += "{:>10.2f}\r\n".format(val) if val != -99999.0 else " Data flagged as bad or missing\r\n"
 
     elif typ == 6:
         msg += flag
@@ -556,6 +556,8 @@ def ports_tag_message_formatter():
     ports_tag_msg += "\r\nREPORT COMPLETE\r\n"
     with open("p", "w") as f:
         f.write(ports_tag_msg)
+    print("****************************")
+    print(ports_tag_msg)
 
 
 message_ready = True
