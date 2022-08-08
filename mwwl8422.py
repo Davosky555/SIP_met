@@ -137,7 +137,7 @@ class SecondarySensor:
         sensor data
         :return: Most recent sensor data value
         """
-        log = command_line("!LOG 0.010 " + self.meas_number + " NY NH\r").strip()
+        log = command_line("!LOG " + from_sec + " " + to_date + " " + self.meas_number + " NY NH\r").strip()
         if log.count(self.label) > 0:
             self.value = round(float(log.split("\r\n")[-1].split(",")[3]), self.right_digits)
             return self.value
@@ -201,7 +201,7 @@ class PrimarySensor(SecondarySensor):
         sensor data, date and time
         :return: Most recent sensor data value, date and time
         """
-        log = command_line("!LOG 0.015 " + self.meas_number + " NY NH\r").strip()
+        log = command_line("!LOG " + from_pri + " " + to_date + " " + self.meas_number + " NY NH\r").strip()
         if log.count(self.label) > 0:
             new_log = log.split("\r\n")[-1].split(",")
             self.value = round(float(new_log[3]), self.right_digits)
@@ -272,9 +272,14 @@ class TsunamiData(SecondarySensor):
         tsunami sensor data, date and time
         :return: Most recent tsunami sensor data value, date and time
         """
-        log = command_line("!LOG 0.006 " + self.meas_number + " NY NH\r").strip()
+        log = command_line("!LOG " + from_tsu + " " + to_date + " " + self.meas_number + " NY NH\r").strip()
+        print(command_line("!LOG " + from_tsu + " " + to_date + " " + self.meas_number + " NY NH\r").strip(), "\rdirect log")
+        command_line("!LOG " + from_tsu + " " + to_date + " " + self.meas_number + " NY NH\r").strip()
+        print("!LOG " + from_tsu + " " + to_date + " " + self.meas_number + " NY NH" + "<--- COMMAND")
+        print(log, "\rlog")
         if log.count(self.label) > 5:
             tsunami_log = log.split("\r\n")[-1].split(",")
+            print(tsunami_log, "tsunami log")
             self.hour = int((tsunami_log[1])[0:2])
             self.minute = int((tsunami_log[1])[3:5])
             self.value = round(float(tsunami_log[3]), self.right_digits)
@@ -556,8 +561,6 @@ def ports_tag_message_formatter():
     ports_tag_msg += "\r\nREPORT COMPLETE\r\n"
     with open("p", "w") as f:
         f.write(ports_tag_msg)
-    print("****************************")
-    print(ports_tag_msg)
 
 
 message_ready = True
@@ -604,6 +607,17 @@ def status_message(msg):
 
 command_line("!file mkdir /sd/status_log/\r")
 status_message("Initializing data...")
+
+to_date = utime.localtime()[0:6]
+from_pri = utime.localtime(utime.mktime(to_date) - 1300)[:6]
+from_sec = utime.localtime(utime.mktime(to_date) - 850)[:6]
+from_tsu = utime.localtime(utime.mktime(to_date) - 500)[:6]
+from_pri, from_sec, from_tsu = format_date_time(from_pri), format_date_time(from_sec), format_date_time(from_tsu)
+to_date = format_date_time(to_date)
+to_date = to_date[0] + " " + to_date[1]
+from_pri = from_pri[0] + " " + from_pri[1]
+from_sec = from_sec[0] + " " + from_sec[1]
+from_tsu = from_tsu[0] + " " + from_tsu[1]
 
 temp_sns = []
 temp_label = []
@@ -677,7 +691,18 @@ status_message("Initialization complete!")
 
 
 def initialize_config():
-    global add_sns, cnt_meas, temp_sns, temp_label, goes_msg
+    global add_sns, cnt_meas, temp_sns, temp_label, goes_msg, from_pri, from_sec, from_tsu, to_date
+    to_date = utime.localtime()[0:6]
+    from_pri = utime.localtime(utime.mktime(to_date) - 1300)[:6]
+    from_sec = utime.localtime(utime.mktime(to_date) - 850)[:6]
+    from_tsu = utime.localtime(utime.mktime(to_date) - 500)[:6]
+    from_pri, from_sec, from_tsu = format_date_time(from_pri), format_date_time(from_sec), format_date_time(from_tsu)
+    to_date = format_date_time(to_date)
+    to_date = to_date[0] + " " + to_date[1]
+    from_pri = from_pri[0] + " " + from_pri[1]
+    from_sec = from_sec[0] + " " + from_sec[1]
+    from_tsu = from_tsu[0] + " " + from_tsu[1]
+
     command_line("!file mkdir /sd/status_log/\r")
     status_message("Initializing data...")
 
@@ -831,11 +856,19 @@ def update_data():
     """
     This task updates the sensor objects
     """
+    global to_date, from_pri, from_sec, from_tsu
     status_message("Updating all data...")
-    for i in add_sns:
-        print(i.label, i.meas_number)
-    print(len(add_sns), "add_sns")
-    print(cnt_meas, "cnt_meas")
+    to_date = utime.localtime()[0:6]
+    from_pri = utime.localtime(utime.mktime(to_date) - 1300)[:6]
+    from_sec = utime.localtime(utime.mktime(to_date) - 850)[:6]
+    from_tsu = utime.localtime(utime.mktime(to_date) - 500)[:6]
+    from_pri, from_sec, from_tsu = format_date_time(from_pri), format_date_time(from_sec), format_date_time(from_tsu)
+    to_date = format_date_time(to_date)
+    to_date = to_date[0] + " " + to_date[1]
+    from_pri = from_pri[0] + " " + from_pri[1]
+    from_sec = from_sec[0] + " " + from_sec[1]
+    from_tsu = from_tsu[0] + " " + from_tsu[1]
+    print(from_pri, from_sec, from_tsu, to_date, "from to")
     for i in range(cnt_meas):
         if i == 0:
             add_sns[i].update_primary_data()

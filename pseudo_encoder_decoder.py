@@ -77,7 +77,11 @@ def pseudo_encoder(int_val, byt):
     elif byt == 3:
         return chr(bi_array[0]) + chr(bi_array[1]) + chr(bi_array[2])
 
-b = "P99999991B\P@@@@^0VeJ8AJv@gC#@yF1@}AA^BCEC@>???8@?f@|I#???3@SCb@a4Bz5C`5CJ6mO-7@g[<BW TJbLCaIKFU]GEiVp"
+b = "P99999991B\P@@@@F0VeW8ACk@DD#@sb1@rv@fJB?Cs>???8@pL@rH#???3@QBw@Z4CQ5CK5Ci6nS-7@cZ<BW TWDMFnOkJX@cL\Am"
+b = "P99999211B\P@J@@@0VfA8BNXARA#BNK<T? gTABdAvAsAtAoArAa"
+b = "P99999991B\P@@@@L0VfR8@vv@|B#@oN1AAG@kGChCg>???8@xu@TH#???3@SC@@Y4Cd5CU5C^6oy-7@uu<Az TRJLYTQQIYWUUS@L"
+b = "P99999991B\P@@@@R0VfS8@vf@]E#AJt1ADA@QJC^CU>???8@y`@jF#???3@PDP@Z4Ci5CT5C_6Yo-7@]C<Az TSULWWYRGGBxQSMe"
+b = "P99999991B\P@@@@^0VfS8@?Q@wG#ACq1@qr@LJCxCq>???8@wxAW@#???3@N@\@Z4Ci5Cu5Bz6nu-7@iY<Az TSaMFRYVBkU`F[KE"
 a=[]
 c=[]
 a.append(b[1:9])
@@ -230,6 +234,7 @@ while True:
         b = b.replace("<", "", 1)
 
 while True:
+    b = b[-16:]
     check = b.find("T")
     if check == -1:
         break
@@ -252,7 +257,6 @@ while True:
         c.append("U1")
         c.append("U1")
         c.append("U1")
-        
-        b = b.replace("T", "", 1)
+        break
 for i in range(len(a)):
     print(c[i], pseudo_decoder(a[i], 0, True))
