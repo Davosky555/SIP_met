@@ -114,13 +114,13 @@ class SecondarySensor:
         if self.value == -99999.0:
             if self.label in ("AQT", "BWL", "COND", "DAT", "MWWL", "MWWL2"):
                 return "???"
-            if self.label in ("AT", "AQT1", "AQT2", "BAT", "BBAT", "BARO", "CTWT", "MWSTD", "MWSTD2", "SNS",
+            if self.label in ("AT", "AQT1", "AQT2", "BAT", "BBAT", "BARO", "BWLSTD", "CTWT", "MWSTD", "MWSTD2", "SNS",
                               "WT", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
                 return "??"
             if self.label in ("MWOUT", "MWOUT2", "BWLOUT"):
                 return "?"
         value = int(self.value * 10 ** self.right_digits)
-        if self.label in ("MWOUT", "MWOUT2", "AQTOUT"):
+        if self.label in ("MWOUT", "MWOUT2", "AQTOUT", "BWLOUT"):
             return pseudo_encoder(value, 1, True)
         if self.label in ("AQTSTD", "BARO", "BAT", "BBAT", "BWLSTD", "MWSTD",
                           "MWSTD2", "WS", "WD", "WG", "WS2", "WD2", "WG2"):
@@ -273,13 +273,9 @@ class TsunamiData(SecondarySensor):
         :return: Most recent tsunami sensor data value, date and time
         """
         log = command_line("!LOG " + from_tsu + " " + to_date + " " + self.meas_number + " NY NH\r").strip()
-        print(command_line("!LOG " + from_tsu + " " + to_date + " " + self.meas_number + " NY NH\r").strip(), "\rdirect log")
         command_line("!LOG " + from_tsu + " " + to_date + " " + self.meas_number + " NY NH\r").strip()
-        print("!LOG " + from_tsu + " " + to_date + " " + self.meas_number + " NY NH" + "<--- COMMAND")
-        print(log, "\rlog")
         if log.count(self.label) > 5:
             tsunami_log = log.split("\r\n")[-1].split(",")
-            print(tsunami_log, "tsunami log")
             self.hour = int((tsunami_log[1])[0:2])
             self.minute = int((tsunami_log[1])[3:5])
             self.value = round(float(tsunami_log[3]), self.right_digits)
@@ -382,6 +378,7 @@ def ports_tag_message_formatter():
     mwwl2 = []
     wind1 = []
     wind2 = []
+    bwl = []
 
     station_id = command_line("!STATION NAME\r").strip()
     pri_year = str("{:04d}".format(add_sns[0].year))
@@ -503,7 +500,7 @@ def ports_tag_message_formatter():
                     pri_sns += "2" + bwl_temp + bwl_std_temp + bwl_out_temp + '"' + bwl_rtemp
                 else:
                     bwl_goes += "2" + bwl_temp + bwl_std_temp + bwl_out_temp + '"' + bwl_rtemp
-                ports_tag_msg += ports_tag_message_append("Y1 8", bwl, 3)
+                ports_tag_msg += ports_tag_message_append("B1 2", bwl, 3)
         elif a_s.label == "AT":
             if a_s.meas_number == str("M1"):
                 pri_sns += "4" + a_s.get_encoded_data()
@@ -531,7 +528,7 @@ def ports_tag_message_formatter():
         elif a_s.label == "BAT":
             bat_goes += "<" + a_s.get_encoded_data() + " "
             ports_tag_msg += ports_tag_message_append("L1 <", a_s.value, 4)
-        elif a_s.label == "BATT":
+        elif a_s.label == "BBAT":
             batt_goes += "<" + a_s.get_encoded_data() + " "
             ports_tag_msg += ports_tag_message_append("L1 <", a_s.value, 4)
         elif a_s.label == "COND":
@@ -626,7 +623,7 @@ cnt_meas = 0
 goes_msg = ""
 for s_n in range(32):
     if command_line("!M" + str(s_n + 1) + " active\r").strip() == "On":
-        if command_line("!M" + str(s_n + 1) + " LABEL\r").strip() not in ("MWCOUNTS", "MWCOUNTS2", "AQTCOUNTS"):
+        if command_line("!M" + str(s_n + 1) + " LABEL\r").strip() not in ("MWCOUNTS", "MWCOUNTS2", "AQTCOUNTS", "BWLCOUNTS"):
             cnt_meas += 1
         if cnt_meas == 1 or command_line("!M" + str(s_n + 1) + " LABEL\r").strip() in ("AQT", "BWL", "MWWL", "MWWL2"):
             temp_sns.append(PrimarySensor("M" + str(s_n + 1)))
@@ -713,7 +710,7 @@ def initialize_config():
 
     for i in range(32):
         if command_line("!M" + str(i + 1) + " active\r").strip() == "On":
-            if command_line("!M" + str(i + 1) + " LABEL\r").strip() not in ("MWCOUNTS", "MWCOUNTS2", "AQTCOUNTS"):
+            if command_line("!M" + str(i + 1) + " LABEL\r").strip() not in ("MWCOUNTS", "MWCOUNTS2", "AQTCOUNTS", "BWLCOUNTS"):
                 cnt_meas += 1
             if cnt_meas == 1 or command_line("!M" + str(i + 1) + " LABEL\r").strip() in \
                     ("AQT", "BWL", "MWWL", "MWWL2"):
@@ -868,9 +865,8 @@ def update_data():
     from_pri = from_pri[0] + " " + from_pri[1]
     from_sec = from_sec[0] + " " + from_sec[1]
     from_tsu = from_tsu[0] + " " + from_tsu[1]
-    print(from_pri, from_sec, from_tsu, to_date, "from to")
     for i in range(cnt_meas):
-        if i == 0:
+        if i == 0 or add_sns[i].label in ("AQT", "BWL", "MWWL", "MWWL2"):
             add_sns[i].update_primary_data()
         else:
             if add_sns[i].label in ("AQTWL", "MWTWL"):
@@ -889,7 +885,21 @@ def goes_message(standard):
     status_message("Transmitting GOES message...")
     _ = standard  # neatly discards the input from sensor because it's not needed
     good_goes_message = goes_msg
+    tx_battery = float(command_line("!BATT\r").strip())
+    if tx_battery < 9.5:
+        tx_battery = 9.5
+    tx_battery = round((tx_battery - 9.5) * 10)
+    tx_battery = pseudo_encoder(tx_battery, 1, True)
+    idx = good_goes_message.rfind(" ")
+    cnt = good_goes_message.count(" ")
+    if idx == -1:
+        pass
+    else:
+        good_goes_message = good_goes_message[:idx + 1] + tx_battery + good_goes_message[idx + 1:]
+        if cnt == 2:
+            good_goes_message = good_goes_message.replace(" ", "", 1)
     status_message("GOES transmission successful!")
+
     return good_goes_message
 
 
