@@ -23,7 +23,9 @@ def pseudo_decoder(pse_val, rn, pos=False):
                 num_val[num] = num_val[num] - 64
             temp = decimal_to_binary(num_val[num])
             bi_val += temp[12:]
+        print("1", bi_val)
         bi_val = int(bi_val, 2)
+        print("2", bi_val)
         if pse_len == 1 and bi_val > 31 and pos == False:
             bi_val = bi_val - 64
         if pse_len == 2 and bi_val > 2047 and pos == False:
@@ -77,4 +79,6 @@ def pseudo_encoder(int_val, byt):
     elif byt == 3:
         return chr(bi_array[0]) + chr(bi_array[1]) + chr(bi_array[2])
 
-print(pseudo_decoder("`", 0, pos=False))
+
+print(pseudo_encoder(5, 2))
+print(pseudo_decoder("@E", 0))

@@ -1,12 +1,3 @@
-def decimal_to_binary(n, byt):
-    byt *= 6
-    bi_num = bin(abs(n)).replace("0b", "")
-    bi_len = len(bi_num)
-    bi_app = "0" * byt
-    bi_app = bi_app[0:byt - bi_len]
-    return bi_app + bi_num
-
-
 def pseudo_encoder(int_val, byt, pos=True):
     """
     Pseudobinary encoder function converts positive decimal number
@@ -28,9 +19,7 @@ def pseudo_encoder(int_val, byt, pos=True):
         int_val = max(int_val, -2 ** (6 * byt) // 2)
         byt_six = byt * 6
         bi_num = bin(abs(int_val)).replace("0b", "")
-        bi_len = len(bi_num)
-        bi_app = "0" * byt_six
-        bi_num = bi_app[0:byt_six - bi_len] + bi_num
+        bi_num = "0" * (byt_six - len(bi_num)) + bi_num
         bi_str = ""
         for bit in bi_num:
             if bit == "1":
@@ -47,34 +36,25 @@ def pseudo_encoder(int_val, byt, pos=True):
     return raw_msg
 
 
-def pseudo_decoder(pse_val, rn, pos=False):
+def pseudo_decoder(pse_val, rn, pos=True):
     if pse_val == '///':
         return 'NaN'
     else:
-        bi_val = ''
-        num_val = [0, 0, 0]
+        bi_val = ""
         pse_len = len(pse_val)
-        if pse_len == 1:
-            pse_val = "@@" + pse_val
-        elif pse_len == 2:
-            pse_val = "@" + pse_val
-        for num in range(3):
-            num_val[num] = ord(pse_val[num])
-            if num_val[num] != 63:
-                num_val[num] = num_val[num] - 64
-            temp = decimal_to_binary(num_val[num], 3)
-            bi_val += temp[12:]
+        for num in range(pse_len):
+            temp = ord(pse_val[num])
+            if temp != 63:
+                temp -= 64
+            bi_num = bin(abs(temp)).replace("0b", "")
+            bi_val += "0" * (6 - len(bi_num)) + bi_num
         bi_val = int(bi_val, 2)
-        if pse_len == 1 and bi_val > 31 and pos == False:
-            bi_val = bi_val - 64
-        if pse_len == 2 and bi_val > 2047 and pos == False:
-            bi_val = bi_val - 4096
-        if pse_len == 3 and bi_val > 131071:
-            bi_val = bi_val - 262144
+        if not pos and bi_val > 2 ** (6 * pse_len) // 2 - 1:
+            bi_val -= 2 ** 6 * pse_len // 2 * 2
         return bi_val * 10 ** -rn
 
 
-for j in range(0, 50000000, 1):
-    enc = pseudo_encoder(j, 7, True)
-    dec = pseudo_decoder(enc, 0, True)
-    print(j, enc, dec)
+j = 123
+enc = pseudo_encoder(j, 6, False)
+dec = pseudo_decoder(enc, 0, False)
+print(j, enc, dec)
