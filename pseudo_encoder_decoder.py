@@ -80,5 +80,7 @@ def pseudo_encoder(int_val, byt):
         return chr(bi_array[0]) + chr(bi_array[1]) + chr(bi_array[2])
 
 
-print(pseudo_encoder(5, 2))
-print(pseudo_decoder("@E", 0))
+j = -99999
+enc = pseudo_encoder(j, 2)
+dec = pseudo_decoder("", 0)
+print(j, enc, dec)

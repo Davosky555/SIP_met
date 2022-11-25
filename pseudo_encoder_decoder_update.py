@@ -27,13 +27,13 @@ def pseudo_encoder(int_val, byt, pos=True):
             else:
                 bi_str += "1"
         int_val = int(bi_str, 2) + 1
-    raw_msg = ""
+    psudo_msg = ""
     for i in range((byt - 1) * 6, -6, -6):
         temp = (int_val >> i) & 63
         if temp != 63:
             temp += 64
-        raw_msg += chr(temp)
-    return raw_msg
+        psudo_msg += chr(temp)
+    return psudo_msg
 
 
 def pseudo_decoder(pse_val, rn, pos=True):
@@ -50,11 +50,16 @@ def pseudo_decoder(pse_val, rn, pos=True):
             bi_val += "0" * (6 - len(bi_num)) + bi_num
         bi_val = int(bi_val, 2)
         if not pos and bi_val > 2 ** (6 * pse_len) // 2 - 1:
-            bi_val -= 2 ** 6 * pse_len // 2 * 2
+            bi_val -= 2 ** (6 * pse_len) // 2 * 2
         return bi_val * 10 ** -rn
 
 
-j = 123
-enc = pseudo_encoder(j, 6, False)
+j = -99999
+enc = pseudo_encoder(j, 1)
 dec = pseudo_decoder(enc, 0, False)
 print(j, enc, dec)
+value2 = -99999.0
+tsunami_offset = 0
+a = value2 % 250 + (value2 // 250 - tsunami_offset) * 250
+print("a", a)
+print(pseudo_encoder(99999, 1))
